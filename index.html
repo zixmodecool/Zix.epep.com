@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Downloader versi Zikri</title>
+  <style>
+    body {
+      margin:0; padding:0;
+      font-family: Arial, sans-serif;
+      color:#fff;
+      text-align:center;
+      overflow-x:hidden;
+    }
+    /* Video latar belakang */
+    #bg-video {
+      position:fixed; top:0; left:0;
+      width:100vw; height:100vh;
+      object-fit:cover;
+      background:black;
+      z-index:-1;
+      pointer-events:none;
+    }
+    h1 {
+      color:#fdd835;
+      font-size:1.8em;
+      margin-top:40px;
+      margin-bottom:10px;
+      text-shadow:0 2px 4px rgba(0,0,0,0.6);
+    }
+    h2 {
+      color:#fdd835;
+      font-size:1em;
+      font-weight:normal;
+      margin-bottom:30px;
+      text-shadow:0 2px 4px rgba(0,0,0,0.6);
+    }
+    .container {
+      position:relative;
+      z-index:2;
+      background:rgba(26,22,44,0.8);
+      padding:25px;
+      border-radius:15px;
+      width:90%;
+      max-width:450px;
+      margin:0 auto 30px auto;
+      box-shadow:0 4px 12px rgba(0,0,0,0.4);
+    }
+    input, select {
+      width:100%;
+      padding:12px;
+      margin-bottom:15px;
+      border:none;
+      border-radius:8px;
+      background:#3a335a;
+      color:#fff;
+    }
+    button {
+      width:100%;
+      padding:12px;
+      margin-bottom:12px;
+      border:none;
+      border-radius:8px;
+      background:#fdd835;
+      color:#1d1833;
+      font-weight:bold;
+      font-size:16px;
+      cursor:pointer;
+      transition:background 0.3s;
+    }
+    button:hover {background:#ffeb3b;}
+    #foto-live-preview {
+      margin-top:20px;
+      display:none;
+      flex-direction:column;
+      align-items:center;
+    }
+    #foto-canvas {
+      border:2px solid #fff;
+      border-radius:10px;
+      max-width:90%;
+    }
+    #video-preview {
+      max-width:90%;
+      border-radius:10px;
+      margin-top:10px;
+    }
+    footer {
+      margin-top:20px;
+      font-size:0.9em;
+      color:#ddd;
+      text-shadow:0 1px 2px rgba(0,0,0,0.5);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Video latar belakang -->
+  <video autoplay muted loop id="bg-video">
+    <source src="https://files.catbox.moe/a6ohhv.mp4" type="video/mp4">
+  </video>
+
+  <h1>All Sosmed Downloader</h1>
+  <h2>Unduh video TikTok dengan cepat</h2>
+
+  <div class="container">
+    <input type="text" id="link" placeholder="Tempel tautan TikTok di sini">
+    <button onclick="downloadVideo()">Unduh Video</button>
+
+    <select id="durasi">
+      <option value="3">Foto Live 3 detik</option>
+      <option value="4">Foto Live 4 detik</option>
+      <option value="5">Foto Live 5 detik</option>
+    </select>
+    <button onclick="downloadFoto()">Unduh Foto Live</button>
+
+    <button onclick="downloadMusik()">Unduh Musik</button>
+    <button onclick="toggleSuara()">ON / OFF Suara</button>
+
+    <div id="foto-live-preview">
+      <h3>Foto Live Preview</h3>
+      <canvas id="foto-canvas" width="300" height="300"></canvas>
+    </div>
+  </div>
+
+  <footer>Created by Zikri</footer>
+
+  <script>
+    const bgVideo = document.getElementById("bg-video");
+    const canvas = document.getElementById("foto-canvas");
+    const ctx = canvas.getContext("2d");
+
+    async function fetchTikTokData(url){
+      if(!url){alert("⚠️ Tempel dulu tautan TikTok!");return null;}
+      try{
+        const res = await fetch("https://www.tikwm.com/api/?url="+encodeURIComponent(url));
+        const data = await res.json();
+        if(data.code===0) return data.data;
+        else{alert("❌ Gagal mengambil data!");return null;}
+      }catch(e){alert("❌ Error koneksi API!");return null;}
+    }
+
+    async function downloadVideo(){
+      const url=document.getElementById("link").value;
+      const data=await fetchTikTokData(url);
+      if(data) window.open(data.play,"_blank");
+    }
+
+    async function downloadMusik(){
+      const url=document.getElementById("link").value;
+      const data=await fetchTikTokData(url);
+      if(data) window.open(data.music,"_blank");
+    }
+
+    async function downloadFoto(){
+      const url=document.getElementById("link").value;
+      const durasi=document.getElementById("durasi").value;
+      const data=await fetchTikTokData(url);
+      if(!data) return;
+
+      const cover=data.cover;
+      const img=new Image();
+      img.crossOrigin="anonymous";
+      img.src=cover;
+      img.onload=()=>{
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        const preview=document.getElementById("foto-live-preview");
+        preview.style.display="flex";
+
+        let oldVideo=document.getElementById("video-preview");
+        if(oldVideo) oldVideo.remove();
+        const vid=document.createElement("video");
+        vid.id="video-preview";
+        vid.src=data.play;
+        vid.autoplay=true;
+        vid.loop=true;
+        vid.muted=true;
+        vid.playsInline=true;
+        preview.appendChild(vid);
+
+        canvas.toBlob(blob=>{
+          const link=document.createElement("a");
+          link.href=URL.createObjectURL(blob);
+          link.download=`foto_live_${durasi}s.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        },"image/png");
+      };
+    }
+
+    function toggleSuara(){
+      bgVideo.muted=!bgVideo.muted;
+      alert(bgVideo.muted?"🔇 Suara dimatikan":"🔊 Suara dihidupkan");
+    }
+  </script>
+</body>
+</html>
